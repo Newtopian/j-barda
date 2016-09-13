@@ -40,12 +40,14 @@ public class SimpleFanningFoldersFlatFilesDocStore implements DocStore {
 	private DocType<byte[]>	bytesDocType	= new DocType<byte[]>("bytes",
 																						new DocReaderFunction<byte[]>() {
 
+																							@Override
 																							public byte[] convert(byte[] in) {
 																								return in;
 																							}
 																						},
 																						new DocWriterFunction<byte[]>() {
 
+																							@Override
 																							public byte[] convert(byte[] objectToWrite) {
 																								return objectToWrite;
 																							}
@@ -67,18 +69,21 @@ public class SimpleFanningFoldersFlatFilesDocStore implements DocStore {
 		Files.createDirectories(this.storeRoot);
 	}
 
+	@Override
 	public void storeDocument(String cabinetName, UUID docId, byte[] document) {
 		this.storeDocument(cabinetName, docId, document, this.bytesDocType);
 	}
 
+	@Override
 	public byte[] getDocumentBytes(String cabinetName, UUID docID) {
 		return this.getDocument(cabinetName, docID, this.bytesDocType);
 	}
 
+	@Override
 	public <IN> void storeDocument(String cabinetName, UUID docId, IN document, DocType<IN> docType) {
 		Path filePath = this.locateFile(cabinetName, docId, docType.getDocTypeName());
 		try {
-			Files.createDirectory(filePath.getParent());
+			Files.createDirectories(filePath.getParent());
 			Files.write(filePath, docType.getWriter().convert(document));
 		}
 		catch (IOException e) {
@@ -87,6 +92,7 @@ public class SimpleFanningFoldersFlatFilesDocStore implements DocStore {
 		}
 	}
 
+	@Override
 	public <OUT> OUT getDocument(String cabinetName, UUID docID, DocType<OUT> docType) {
 		Path filePath = this.locateFile(cabinetName, docID, "bytes");
 

@@ -57,4 +57,18 @@ public abstract class DocType<T> {
 		this.fileReader = fileReader;
 		this.fileWriter = fileWriter;
 	}
+
+	protected DocType(String docTypeName) {
+		this(docTypeName, null, null);
+	}
+
+	protected void setFileReader(DocReaderFunction<T> fileReader)
+	{
+		this.fileReader = fileReader;
+	}
+
+	protected void setFileWriter(DocWriterFunction<T> fileWriter)
+	{
+		this.fileWriter = fileWriter;
+	}
 }

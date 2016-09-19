@@ -30,13 +30,11 @@ public class JAXBDocType<T> extends DocType<T> {
 	/**
 	 * Creates a JAXBDocType
 	 * 
-	 * @param docTypeName
-	 *          Short description of the typeName
 	 * @param classForTypeParameter
 	 *          class for the typeT
 	 */
-	public JAXBDocType(String docTypeName, Class<T> classForTypeParameter) {
-		super(docTypeName);
+	public JAXBDocType(Class<T> classForTypeParameter) {
+		super(classForTypeParameter.getSimpleName());
 		this.classForTypeParam = classForTypeParameter;
 		this.setFileWriter(obj ->
 			{

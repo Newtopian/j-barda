@@ -2,6 +2,7 @@ package net.hit.jaxb;
 
 import java.io.IOException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -35,6 +36,8 @@ public class OmniFactory {
 	private Map<String, Object>				packageObjectFactoryMap	= new HashMap<>();
 	private Map<Class<?>, Method>			instanceMethodMap				= new HashMap<>();
 
+	private List<Class<?>>						cloneableList						= new ArrayList<>();
+
 	/**
 	 * @param packagePrefix
 	 *          prefix for the packages to scan
@@ -60,6 +63,7 @@ public class OmniFactory {
 		this.classToSchemaMap.clear();
 		packageObjectFactoryMap.clear();
 		instanceMethodMap.clear();
+		cloneableList.clear();
 
 		ClassPath classPath = ClassPath.from(this.getClass().getClassLoader());
 		List<Class<?>> xmlTypeList = classPath.getTopLevelClassesRecursive(packagePrefix)
@@ -129,6 +133,10 @@ public class OmniFactory {
 				{
 					this.ifToTypeMap.put(entry.getKey(), entry.getValue().iterator().next());
 				}
+				if (entry.getKey().equals(Cloneable.class))
+				{
+					this.cloneableList.addAll(entry.getValue());
+				}
 			}
 		}
 
@@ -173,16 +181,20 @@ public class OmniFactory {
 	}
 
 	/**
-	 * @param daInterface
-	 *          the interface to get a writable instance from
+	 * @param theClassOrInterface
+	 *          the class or interface to create an instance from. Function will first try and resolve the interface against a real class, if
+	 *          unable it will use the class directly.
 	 * @return the writable instance for this interface
 	 */
 	@SuppressWarnings("unchecked")
-	public <T extends I, I> T create(Class<I> daInterface) {
-		if (daInterface == null) { throw new NullPointerException("Cannot create instances of a null class"); }
+	public <T extends I, I> T create(Class<I> theClassOrInterface) {
+		if (theClassOrInterface == null) { throw new NullPointerException("Cannot create instances of a null class"); }
 
-		Class<T> ifClass = (Class<T>) this.ifToTypeMap.get(daInterface);
-
+		Class<T> ifClass = (Class<T>) this.ifToTypeMap.get(theClassOrInterface);
+		if (ifClass == null)
+		{
+			ifClass = (Class<T>) theClassOrInterface;
+		}
 		Method met = this.instanceMethodMap.get(ifClass);
 		Object instance = this.packageObjectFactoryMap.get(ifClass.getPackage().getName());
 
@@ -196,10 +208,44 @@ public class OmniFactory {
 	}
 
 	/**
+	 * @param instance
+	 *          the instance to clone
+	 * @return a writable clone of the instance
+	 */
+	@SuppressWarnings("unchecked")
+	public <T extends I, I> T cloneAsWritable(I instance)
+	{
+		if (instance == null) return null;
+
+		log.info("the Instance class {}", instance.getClass());
+
+		try {
+			return (T) instance.getClass().getMethod("clone").invoke(instance);
+		}
+		catch (Exception e) {
+			log.error("couldnot clone this instance", e);
+			throw new RuntimeException("Could not clone instance " + instance.toString());
+		}
+	}
+
+	/**
+	 * @param interfaceClass
+	 *          the interface that is implemented by the desired JAXBType
+	 * @return the Class instance representing this JAXB type
+	 */
+	@SuppressWarnings("unchecked")
+	public <T extends I, I> Class<T> getJaxbClassFor(Class<I> interfaceClass)
+	{
+		if (this.classToSchemaMap.containsKey(interfaceClass)) { return (Class<T>) interfaceClass; }
+		return (Class<T>) this.ifToTypeMap.get(interfaceClass);
+	}
+
+	/**
 	 * @return the JAXB Context initialized to all the packages found that contained ObjectFactory
 	 */
 	public JAXBContext getContext()
 	{
 		return this.ctx;
 	}
+
 }

@@ -17,7 +17,7 @@ import javax.xml.transform.stream.StreamSource;
 
 /**
  * Generic DocType for any JAXB backed object.
- * 
+ *
  * @author edaigneault
  *
  * @param <T>
@@ -25,16 +25,30 @@ import javax.xml.transform.stream.StreamSource;
  */
 public class JAXBDocType<T> extends DocType<T> {
 
-	private Class<T>	classForTypeParam;
+	private Class<T>		classForTypeParam;
+	private JAXBContext	context;
 
 	/**
 	 * Creates a JAXBDocType
-	 * 
+	 *
 	 * @param classForTypeParameter
 	 *          class for the typeT
 	 */
 	public JAXBDocType(Class<T> classForTypeParameter) {
+		this(classForTypeParameter, null);
+	}
+
+	/**
+	 * Creates a JAXBDocType
+	 *
+	 * @param classForTypeParameter
+	 *          class for the typeT
+	 * @param context
+	 *          the JAXBContext to use for this DocType
+	 */
+	public JAXBDocType(Class<T> classForTypeParameter, JAXBContext context) {
 		super(classForTypeParameter.getSimpleName());
+		this.context = context;
 		this.classForTypeParam = classForTypeParameter;
 		this.setFileWriter(obj ->
 			{
@@ -51,9 +65,12 @@ public class JAXBDocType<T> extends DocType<T> {
 		try {
 			@SuppressWarnings("unchecked")
 			JAXBElement<? extends T> jaxbEvent = new JAXBElement<T>(new QName(Introspector.decapitalize(object.getClass().getSimpleName())), (Class<T>) object.getClass(), object);
-			JAXBContext jaxb = JAXBContext.newInstance(object.getClass());
+			JAXBContext jaxb = this.context;
+			if (jaxb == null) {
+				jaxb = JAXBContext.newInstance(object.getClass());
+			}
 			Marshaller marshaller = jaxb.createMarshaller();
-			marshaller.setProperty("jaxb.fragment", true);
+			// marshaller.setProperty("jaxb.fragment", true);
 
 			StringWriter writer = new StringWriter();
 			marshaller.marshal(jaxbEvent, writer);
@@ -69,9 +86,12 @@ public class JAXBDocType<T> extends DocType<T> {
 		try {
 			// JAXBElement<T> jaxbEvent = new JAXBElement<T>(new QName(Introspector.decapitalize(this.classForTypeParam.getSimpleName())),
 			// this.classForTypeParam, object);
-			JAXBContext jaxb = JAXBContext.newInstance(this.classForTypeParam);
+			JAXBContext jaxb = this.context;
+			if (jaxb == null) {
+				jaxb = JAXBContext.newInstance(this.classForTypeParam);
+			}
 			Unmarshaller umar = jaxb.createUnmarshaller();
-			umar.setProperty("jaxb.fragment", true);
+			// umar.setProperty("jaxb.fragment", true);
 
 			Source src = new StreamSource(new StringReader(str));
 			JAXBElement<T> jaxbEvent = umar.unmarshal(src, this.classForTypeParam);

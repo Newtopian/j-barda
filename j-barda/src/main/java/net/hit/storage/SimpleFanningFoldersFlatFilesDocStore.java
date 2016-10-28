@@ -7,30 +7,30 @@ import java.util.UUID;
 
 /**
  * Stores documents in a folder hierarchy from the DocStore Root.
- * 
+ *
  * at the root a first set of folders denotes Cabinets. Cabinets are named sub-storage area so to allow multiple stores to live under the
  * same roof.
- * 
+ *
  * Then storage units are created by fanning folders based on the document's key hashcode.
- * 
+ *
  * each eight bits of the hashcode starting with the most significant create a sub-folder named after the hex code of these 8 bits. The
  * document is stored using it's UUID key as a document name inside the leaves folder. this tree is therefore always 4 level deep (5 if we
  * include the cabinet name).
- * 
+ *
  * It will create a very sparse folder tree and is quite typical to get many more folders then there are actual documents.
- * 
+ *
  * This should alleviate problems when trying to load from a folder that contains a large amount of files in it as the most sub-folders for
  * any given folder is naturally limited at 255. The leaves folder do not have a set limit but it is hoped that the fanning out will allow a
  * very large amount of document to be stored before we need to worry with the file system performance.
- * 
+ *
  * Keyed access are very fast too as we can always re-create the exact path of the file using just the key and the cabinet name no search
  * necessary.
- * 
+ *
  * Searches however tend to be much slower as we need to walk up and down a very sparse tree. Perhaps some optimization can be done here
  * later.
- * 
+ *
  * Right not only binary form is supported, thus all files receive the .bytes extension
- * 
+ *
  *
  */
 public class SimpleFanningFoldersFlatFilesDocStore implements DocStore {
@@ -57,8 +57,8 @@ public class SimpleFanningFoldersFlatFilesDocStore implements DocStore {
 
 	/**
 	 * Create an instance at the given root directory.
-	 * 
-	 * 
+	 *
+	 *
 	 * @param storeRoot
 	 *          the store's root path
 	 * @throws IOException
@@ -94,7 +94,7 @@ public class SimpleFanningFoldersFlatFilesDocStore implements DocStore {
 
 	@Override
 	public <OUT> OUT getDocument(String cabinetName, UUID docID, DocType<OUT> docType) {
-		Path filePath = this.locateFile(cabinetName, docID, "bytes");
+		Path filePath = this.locateFile(cabinetName, docID, docType.getDocTypeName());
 
 		try {
 			return docType.getReader().convert(Files.readAllBytes(filePath));
